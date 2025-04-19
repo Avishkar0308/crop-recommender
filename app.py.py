@@ -162,4 +162,9 @@ ax.set_title("Feature Importance")
 ax.set_xlabel("Importance Score")
 st.pyplot(fig)
 
+# Instructions for manual testing
+st.markdown("""
+### 🧭 Testing Without GPS
+You can simulate locations by adding URL parameters:
+
 
