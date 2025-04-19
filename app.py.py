@@ -23,23 +23,27 @@ y = df["label"]
 model = RandomForestClassifier(n_estimators=100, random_state=42)
 model.fit(X, y)
 
-# Climate zone mapping
+# Climate zone mapping (latitude, longitude) -> [temp, humidity, rainfall]
 CLIMATE_ZONES = {
+    # Tropical regions
     "Tropical": {
         "lat_range": (-23.5, 23.5),
         "lon_range": (-180, 180),
         "defaults": [28.0, 80.0, 200.0]
     },
+    # Temperate regions
     "Temperate": {
         "lat_range": (23.5, 66.5),
         "lon_range": (-180, 180),
         "defaults": [20.0, 60.0, 100.0]
     },
+    # Arid regions
     "Arid": {
-        "lat_range": (15, 35),
+        "lat_range": (15, 35),  # Sahara, Middle East, etc.
         "lon_range": (-20, 60),
         "defaults": [35.0, 30.0, 20.0]
     },
+    # Default fallback
     "Default": {
         "lat_range": (-90, 90),
         "lon_range": (-180, 180),
@@ -47,8 +51,9 @@ CLIMATE_ZONES = {
     }
 }
 
-# Inject JS to get GPS
+# GPS Detection Component
 def get_gps_location():
+    """Inject JavaScript to get GPS coordinates"""
     gps_js = """
     <script>
     function sendCoords() {
@@ -68,7 +73,7 @@ def get_gps_location():
     """
     st.components.v1.html(gps_js, height=0)
 
-# Check for query params
+# Check for coordinates in URL params
 def check_for_coords():
     params = st.experimental_get_query_params()
     if params.get("lat") and params.get("lon"):
@@ -80,7 +85,7 @@ def check_for_coords():
             return None
     return None
 
-# Get climate defaults
+# Get climate defaults based on coordinates
 def get_climate_defaults(lat, lon):
     for zone, data in CLIMATE_ZONES.items():
         if (data["lat_range"][0] <= lat <= data["lat_range"][1] and 
@@ -88,41 +93,40 @@ def get_climate_defaults(lat, lon):
             return data["defaults"], zone
     return CLIMATE_ZONES["Default"]["defaults"], "Unknown"
 
-# App UI
+# Main App
 st.title("🌍 GPS-Enabled Crop Recommendation")
-st.markdown("""This system automatically detects your location to suggest optimal crops 
-            based on local climate conditions.""")
+st.markdown("This system automatically detects your location to suggest optimal crops based on local climate conditions.")
 
-# Init session
+# Initialize session state
 if "coords" not in st.session_state:
     st.session_state.coords = check_for_coords()
 if "climate_zone" not in st.session_state:
     st.session_state.climate_zone = None
 
-# Get GPS
+# Get GPS coordinates
 get_gps_location()
 
-# Show location if available
+# Display location info if available
 if st.session_state.coords:
     lat, lon = st.session_state.coords
     defaults, zone = get_climate_defaults(lat, lon)
     st.session_state.climate_zone = zone
     
-    st.success(f"📍 Detected location: {lat:.4f}, {lon:.4f}")
-    st.info(f"🌦️ Climate zone: {zone} (Temp: {defaults[0]}°C, Humidity: {defaults[1]}%, Rainfall: {defaults[2]}mm)")
+    st.success(f"📍 Detected location: Latitude {lat:.4f}, Longitude {lon:.4f}")
+    st.info(f"🌦️ Climate zone: {zone} (Default values: Temp {defaults[0]}°C, Humidity {defaults[1]}%, Rainfall {defaults[2]}mm)")
 
 # Input form
 with st.form("crop_form"):
-    st.subheader("🌱 Soil Parameters")
+    st.subheader("🌱 Soil and Climate Parameters")
     col1, col2 = st.columns(2)
     
     with col1:
         n = st.slider("Nitrogen (N)", 0, 140, 90)
         p = st.slider("Phosphorus (P)", 5, 145, 40)
         k = st.slider("Potassium (K)", 5, 205, 40)
+        ph = st.slider("pH", 3.5, 9.5, 6.5)
     
     with col2:
-        ph = st.slider("pH", 3.5, 9.5, 6.5)
         if st.session_state.coords:
             defaults, _ = get_climate_defaults(*st.session_state.coords)
             temperature = st.slider("Temperature (°C)", 10.0, 45.0, float(defaults[0]))
@@ -133,7 +137,7 @@ with st.form("crop_form"):
             humidity = st.slider("Humidity (%)", 10.0, 100.0, 60.0)
             rainfall = st.slider("Rainfall (mm)", 20.0, 300.0, 100.0)
     
-    submitted = st.form_submit_button("Recommend Crop")
+    submitted = st.form_submit_button("Get Crop Recommendation")
 
 # Prediction
 if submitted:
@@ -145,19 +149,17 @@ if submitted:
     if st.session_state.coords:
         st.info(f"Recommendation based on {st.session_state.climate_zone} climate conditions")
 
-# Feature Importance
+# Feature importance visualization
 st.subheader("📊 How Different Factors Affect Recommendations")
 fig, ax = plt.subplots(figsize=(10, 5))
 importances = model.feature_importances_
 features = X.columns
 sns.barplot(x=importances, y=features, hue=features, palette="viridis", legend=False)
-ax.set_title("Feature Importance")
+ax.set_title("Relative Importance of Each Parameter")
 ax.set_xlabel("Importance Score")
 st.pyplot(fig)
 
-# Simulate Location Help
+# Testing instructions
 st.markdown("""
-### 🧭 Testing Without GPS
-You can simulate locations by adding URL parameters in the browser:
-- Example: `http://localhost:8501/?lat=19.5&lon=73.8`
-""")
+### 🧭 Testing Without GPS Access
+You can simulate different locations by adding URL parameters:
