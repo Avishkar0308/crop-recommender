@@ -165,4 +165,3 @@ st.pyplot(fig)
 st.markdown("""
 ### 🧭 Testing Without GPS
 You can simulate locations by adding URL parameters:
-
