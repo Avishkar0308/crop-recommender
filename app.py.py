@@ -95,8 +95,7 @@ def get_climate_defaults(lat, lon):
 
 # Main App
 st.title("🌍 GPS-Enabled Crop Recommendation")
-st.markdown("""This system automatically detects your location to suggest optimal crops 
-            based on local climate conditions.""")
+st.markdown("This system automatically detects your location to suggest optimal crops based on local climate conditions.")
 
 # Initialize session state
 if "coords" not in st.session_state:
@@ -166,5 +165,4 @@ st.pyplot(fig)
 st.markdown("""
 ### 🧭 Testing Without GPS
 You can simulate locations by adding URL parameters:
-
 
